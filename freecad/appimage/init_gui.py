@@ -1,13 +1,14 @@
 import sys
 import time
 import os
-from PySide2 import QtWidgets, QtGui, QtCore
+from PySide import QtWidgets, QtGui, QtCore
 
 import FreeCAD
 import FreeCADGui
 
 DIR = os.path.dirname(__file__)
 FreeCADGui.addIconPath(os.path.join(DIR, "icons"))
+APPNAME=FreeCAD.ConfigGet('Application')
 
 class AppImagePreferencePage:
     def __init__(self):
@@ -38,14 +39,15 @@ class AppImagePreferencePage:
             return
 
         # Get Icon for FreeCAD.
-        icon = QtCore.QByteArray()
-        buf = QtCore.QBuffer(icon)
+        icon = FreeCADGui.getMainWindow().windowIcon()
+        buf = QtCore.QBuffer()
         buf.open(QtCore.QIODevice.WriteOnly);
-        pixmap = QtGui.QPixmap(":/icons/freecad.svg")
+        pixmap = icon.pixmap(64, 64)
         pixmap.save(buf, "PNG")
+        byte_array = buf.data()
 
-        self.updater.setApplicationName("FreeCAD")
-        self.updater.setIcon(icon)
+        self.updater.setApplicationName(APPNAME)
+        self.updater.setIcon(byte_array)
         self.updater.start(self.updater.getConstant("Action::UpdateWithGUI"))
 
     def handle_update_check_error(self, code, action):
@@ -59,7 +61,7 @@ class AppImagePreferencePage:
 
         self.box.setIcon(QtWidgets.QMessageBox.Icon.Critical)
         self.box.setWindowTitle("Update Error")
-        self.box.setText("FreeCAD cannot update because, " + self.updater.errorCodeToDescriptionString(code))
+        self.box.setText(f"{APPNAME} cannot update because, " + self.updater.errorCodeToDescriptionString(code))
         self.box.exec()
 
     def handle_update_check_progress(self, percentage , br, bt, speed, speed_units, action):
@@ -102,7 +104,7 @@ class AppImagePreferencePage:
             # Show a simple dialog box.
             self.box.setIcon(QtWidgets.QMessageBox.Icon.Information)
             self.box.setWindowTitle("No Update Needed")
-            self.box.setText("You are already using the latest version of FreeCAD.")
+            self.box.setText(f"You are already using the latest version of {APPNAME}.")
             self.box.exec()
 
     def quit_freecad(self):
@@ -123,7 +125,7 @@ class AppImagePreferencePage:
         # remote target file to know if we really
         # need a update since SHA1 hashes differ
         # every week.
-        self.updater.setApplicationName("FreeCAD")
+        self.updater.setApplicationName(APPNAME)
         self.updater.start(self.updater.getConstant("Action::CheckForUpdate"))
 
         # QProgressDialog while checking for update.
